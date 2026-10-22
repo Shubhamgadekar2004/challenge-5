@@ -1,0 +1,94 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  events        Event[]
+}
+
+model Event {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id])
+  title            String
+  type             String
+  totalBudget      Float
+  eventDate        DateTime
+  location         String?
+  guestCount       Int?
+  theme            String?
+  notes            String?
+  status           String    @default("PLANNING")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  budgetItems      BudgetItem[]
+  milestones       Milestone[]
+  vendors          Vendor[]
+  aiConversations  AIConversation[]
+}
+
+
+
+
+
+model BudgetItem {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id])
+  category    String
+  description String?
+  estimated   Float?
+  actual      Float?
+  status      String @default("PENDING")
+  createdAt   DateTime @default(now())
+}
+
+
+
+model Milestone {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id])
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  sortOrder   Int?
+  createdAt   DateTime @default(now())
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id])
+  name        String
+  category    String
+  contact     String?
+  email       String?
+  quotedPrice Float?
+  status      String @default("RESEARCHING")
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  prompt    String
+  response  String
+  category  String?
+  createdAt DateTime @default(now())
+}
