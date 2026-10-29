@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 type BudgetItem = {
   id: string;
@@ -89,7 +89,7 @@ export default function EventDetailPage() {
     return { estimated, actual, remaining: (event?.totalBudget ?? 0) - actual };
   }, [event]);
 
-  const loadEvent = async () => {
+  const loadEvent = useCallback(async () => {
     if (!eventId) return;
     setError('');
     try {
@@ -106,11 +106,11 @@ export default function EventDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
-    loadEvent();
-  }, [eventId]);
+    void loadEvent();
+  }, [loadEvent]);
 
   const addBudgetItem = async (e: FormEvent) => {
     e.preventDefault();
