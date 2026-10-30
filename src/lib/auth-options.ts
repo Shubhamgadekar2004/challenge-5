@@ -2,7 +2,10 @@ import bcrypt from 'bcryptjs';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import prisma from '@/lib/prisma';
+import { validateServerEnv } from '@/lib/env';
 import { normalizeEmail } from '@/lib/sanitize';
+
+validateServerEnv(['NEXTAUTH_SECRET', 'NEXTAUTH_URL']);
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -29,13 +32,13 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (session.user && token.sub) {
-        (session.user as { id?: string }).id = token.sub;
+        session.user.id = token.sub;
       }
       return session;
     },
     async jwt({ token, user }) {
-      if (user) {
-        token.sub = (user as { id?: string }).id;
+      if (user?.id) {
+        token.sub = user.id;
       }
       return token;
     },

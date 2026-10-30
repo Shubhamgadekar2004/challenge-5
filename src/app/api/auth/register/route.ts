@@ -1,22 +1,28 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { normalizeEmail, sanitizeInput } from '@/lib/sanitize';
+
+const registerSchema = z.object({
+  name: z.string().trim().max(200).optional().default(''),
+  email: z.string().trim().email('Please enter a valid email address').max(254),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(72),
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const email = normalizeEmail(String(body.email ?? ''));
-    const password = typeof body.password === 'string' ? body.password.trim() : '';
-    const name = sanitizeInput(String(body.name ?? ''), 200);
+    const parsed = registerSchema.safeParse(body);
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Invalid registration data';
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
-    }
+    const { name, password } = parsed.data;
+    const email = normalizeEmail(parsed.data.email);
+    const safeName = sanitizeInput(name, 200);
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -25,7 +31,7 @@ export async function POST(request: Request) {
 
     const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
-      data: { email, name, passwordHash: hashed },
+      data: { email, name: safeName, passwordHash: hashed },
       select: { id: true, email: true, name: true },
     });
 
