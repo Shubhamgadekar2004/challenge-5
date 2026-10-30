@@ -3,26 +3,44 @@
  * Prevents XSS by stripping HTML tags and dangerous characters.
  */
 
+const collapseWhitespace = (input: string): string => input.replace(/\s+/g, ' ').trim();
+
 /**
- * Strip all HTML tags from a string.
+ * Strip HTML, encoded entities, and control characters from a string.
  */
 export function stripHtml(input: string): string {
-  return input.replace(/<[^>]*>/g, '');
+  if (typeof input !== 'string') return '';
+
+  return collapseWhitespace(
+    input
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&#0*160;/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&[#\w]+;/g, ' ')
+      .replace(/[\u0000-\u001F\u007F]+/g, ' ')
+  );
 }
 
 /**
- * Sanitize user input — strip HTML, trim, enforce max length.
+ * Sanitize user input — strip HTML, normalize whitespace, enforce max length.
  */
 export function sanitizeInput(input: string, maxLength: number = 1000): string {
   if (typeof input !== 'string') return '';
-  return stripHtml(input).trim().slice(0, maxLength);
+  return stripHtml(input).slice(0, maxLength);
 }
 
 /**
- * Sanitize an email address.
+ * Normalize an email address for storage and comparison.
  */
 export function sanitizeEmail(email: string): string {
-  return email.toLowerCase().trim().slice(0, 254);
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase().replace(/\s+/g, '').slice(0, 254);
+}
+
+export function normalizeEmail(email: string): string {
+  return sanitizeEmail(email);
 }
 
 /**
